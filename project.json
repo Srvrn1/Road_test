@@ -1,0 +1,17 @@
+{
+  "name": "Lipa",
+  "about": "Эксперементальная обкатка ",
+  "version": "0.1",
+  "notes": "первый раз",
+  "builds": [
+    {
+      "chipFamily": "ESP8266",
+      "parts": [
+        {
+          "path": "https://raw.githubusercontent.com/Srvrn1/Road_test/main/bin/firmware.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}
