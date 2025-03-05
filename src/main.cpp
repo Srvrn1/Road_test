@@ -1,7 +1,10 @@
 
 #include <Arduino.h>
 #include <GyverHub.h>
-
+//==========================
+#include <Gyver433.h>
+Gyver433_RX<5, 4> rx;
+//=============================
 #define led 2            //D4
 #define press 4          //D2
 #define led_brite 14     //D5
@@ -20,7 +23,16 @@ uint8_t Rsw_roz;            //ритина розетка
 
 uint8_t sw_mg;              //положение переключателя в туалете
 const char*  vers_mg = "0";             //версия прошивы туалетного контроллера
-
+ 
+//=========================
+struct DataPack {
+  byte counter = 0;
+  byte randomNum;
+  uint16_t analog;
+  //uint32_t time;
+};
+DataPack data;
+//==============================
 //////////////======================================
 
 GyverHub hub("MyDev", "дорога", "f0ad");  // имя сети, имя устройства, иконка
@@ -39,7 +51,11 @@ const char* mqtt_server = "m4.wqtt.ru";
 const int mqtt_port = 9478;
 const char* mqtt_user = "u_5A3C2X";
 const char* mqtt_password = "HilZPRjD";
-
+//=============================
+ICACHE_RAM_ATTR void isr() {            // тикер вызывается в прерывании
+  rx.tickISR();
+}
+//===================================
 void onunix(uint32_t stamp) {                //получаем дату время. ра6отает!!!
     time_sist = (stamp + 10800) % 86400;    //получаем только время и корректируем часовой пояс +3 часа
 }
@@ -78,6 +94,22 @@ void sw_svet(){
 }
 void sw_becksvet(){
   digitalWrite(led_beck, !sw_lbeckstate);
+}
+void radio(){
+    if (rx.readData(data)) {                          // переписываем данные в неё
+        // если данные подходят - выводим
+      Serial.println(data.counter);
+      Serial.println(data.randomNum);
+      Serial.println(data.analog);
+      //Serial.println(data.time);
+      Serial.println();
+    } 
+    else {
+      Serial.println("Wrong data");
+    }
+    Serial.print("RSSI: ");
+    Serial.println(rx.getRSSI());
+  
 }
 
 void build(gh::Builder& b){
@@ -139,22 +171,24 @@ void setup(){
   setup_wifi();
 
   hub.mqtt.config(mqtt_server, mqtt_port, mqtt_user, mqtt_password);
-  hub.setVersion("Srvrn1/Lipa@1.6.7");
+  hub.setVersion("Srvrn1/Lipa@0.1");
   hub.onUnix(onunix);
   hub.onBuild(build);                        // подключаем билдер
   hub.begin();   
-  
+
+  attachInterrupt(5, isr, CHANGE);  // взводим прерывания по CHANGE
 }
 
 void loop(){
   hub.tick();
+
+  if (rx.gotData()) radio();
 
   static GH::Timer tmr(1000);                    //запускаем таймер
   if(tmr){
     time_sist++;
     if(time_sist >= 86400) time_sist = 0;                   //время в Unix формате с6расываем в 00 часов
     hub.sendUpdate(F("time"));
-    Serial.println("ok");
 
     if(time_sist == t_on){                                 //6удильник включаем Switch
       sw_stat = 1;
