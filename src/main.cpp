@@ -26,8 +26,8 @@ const char*  vers_mg = "0";             //версия прошивы туале
  
 //=========================
 struct DataPack {
-  byte counter = 0;
-  byte randomNum;
+  byte deviceID;
+  byte counter;
   uint16_t analog;
   //uint32_t time;
 };
@@ -57,7 +57,7 @@ ICACHE_RAM_ATTR void isr() {            // тикер вызывается в п
 }
 //===================================
 void onunix(uint32_t stamp) {                //получаем дату время. ра6отает!!!
-    time_sist = (stamp + 10800) % 86400;    //получаем только время и корректируем часовой пояс +3 часа
+    time_sist = (stamp + 10800 + 21600) % 86400;    //получаем только время и корректируем часовой пояс +3 часа
 }
 
 void setup_wifi() {
@@ -95,28 +95,30 @@ void sw_svet(){
 void sw_becksvet(){
   digitalWrite(led_beck, !sw_lbeckstate);
 }
+
 void radio(){
     if (rx.readData(data)) {                          // переписываем данные в неё
         // если данные подходят - выводим
+      hub.sendUpdate(F("vers"));
+      Serial.print("Device ");
+      Serial.println(data.deviceID);
       Serial.println(data.counter);
-      Serial.println(data.randomNum);
       Serial.println(data.analog);
-      //Serial.println(data.time);
-      Serial.println();
     } 
     else {
       Serial.println("Wrong data");
     }
     Serial.print("RSSI: ");
     Serial.println(rx.getRSSI());
+    Serial.println();
   
 }
 
 void build(gh::Builder& b){
   if(b.beginRow()){
   b.Time_(F("time"), &time_sist).label(F("время")).color(gh::Colors::Blue);
-  b.Display(F("V1.6.6")).label(F("Releases")).color(gh::Colors::Blue);
-  b.Display_(F("vers")).label(F("версия")). color(gh::Colors::Blue);                      //сюда шлет свою версию прибор из туалета
+  b.Display(F("---")).label(F("Releases")).color(gh::Colors::Blue);
+  b.Display_(F("vers"),&data.counter ).label(F("count")). color(gh::Colors::Blue);                      //сюда шлет свою версию прибор из туалета
   b.Button_(F("supd"));                                               //по нажатию, все удаленные устройства ищут обновы.
   b.endRow();
   }
@@ -154,7 +156,7 @@ void setup(){
   Serial.begin(74880);
   Serial.println("");
   Serial.println("Hello");
-  Serial.println("версия 0.1");
+  Serial.println("версия 0.2");
 
   pinMode(led, OUTPUT);
   digitalWrite(led, LOW);
