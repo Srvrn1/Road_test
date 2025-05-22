@@ -1,9 +1,9 @@
-
+#define G433_SPEED 3000 
 #include <Arduino.h>
 #include <GyverHub.h>
 //==========================
 #include <Gyver433.h>
-Gyver433_RX<5, 4> rx;
+Gyver433_RX<5, 16> rx;
 //=============================
 #define led 2            //D4
 #define press 4          //D2
@@ -11,6 +11,9 @@ Gyver433_RX<5, 4> rx;
 #define led_beck 12      //D6
 
 ///////////////=====================================
+uint32_t time_ds01;
+uint32_t time_ds02;
+//--------------------------
 uint32_t time_sist;         //время системы
 uint32_t  t_on;             //время вкл аквариум
 uint32_t  t_off;            //время выкл аквариум
@@ -18,33 +21,29 @@ uint8_t sw_stat;            //положение перекл аквариума
 uint8_t sw_press;           //положение переключателя компрессора
 uint8_t sw_lbstate;         // точечные светильники
 uint8_t sw_lbeckstate;      //выключатель подсветки
-uint8_t Rsw_svet;           //выкл Риты
-uint8_t Rsw_roz;            //ритина розетка
 
-uint8_t sw_mg;              //положение переключателя в туалете
-const char*  vers_mg = "0";             //версия прошивы туалетного контроллера
- 
+uint32_t timer_led;         //
+
 //=========================
 struct DataPack {
-  byte deviceID;
-  byte counter;
-  uint16_t analog;
-  //uint32_t time;
+  int32_t deviceID;
+  uint32_t counter;
+  float voltage;
+  float temper;
 };
 DataPack data;
 //==============================
 //////////////======================================
 
-GyverHub hub("MyDev", "дорога", "f0ad");  // имя сети, имя устройства, иконка
+GyverHub hub("MyDev", "дорога", "f63b");  // имя сети, имя устройства, иконка
 WiFiClient espClient;
 
 ///   WI-FI  ///////////
-//const char* ssid = "RT-WiFi-0FBE";
-//const char* password = "YeNu5VAyeY";
+const char* ssid = "TTK-24";
+const char* password = "79811231";
+
 //const char* ssid = "srvrn";
 //const char* password = "2155791975";
-const char* ssid = "srvrn";
-const char* password = "2155791975";
 
 //   MQTT  /////////////
 const char* mqtt_server = "m4.wqtt.ru";
@@ -97,32 +96,72 @@ void sw_becksvet(){
 }
 
 void radio(){
-    if (rx.readData(data)) {                          // переписываем данные в неё
-        // если данные подходят - выводим
-      hub.sendUpdate(F("vers"));
-      Serial.print("Device ");
-      Serial.println(data.deviceID);
-      Serial.println(data.counter);
-      Serial.println(data.analog);
-    } 
-    else {
-      Serial.println("Wrong data");
-    }
-    Serial.print("RSSI: ");
-    Serial.println(rx.getRSSI());
-    Serial.println();
+  digitalWrite(led, LOW);
+  timer_led = millis();
+  
+  if (rx.readData(data)) {                          // переписываем данные в неё  
+    Serial.print("Device ");                        // если данные подходят - выводим
+    Serial.println(data.deviceID);
+    Serial.println(data.counter);
+    Serial.println(data.voltage);
+    Serial.println(data.temper);
+  } 
+  else {
+    Serial.println("Wrong data");
+  }
+  Serial.print("RSSI: ");
+  Serial.println(rx.getRSSI());
+  Serial.println();
+
+  switch (data.deviceID) {
+  case 1:
+    time_ds01 = time_sist;
+    hub.sendUpdate (F("time_ds01"));
+    hub.sendUpdate (F("volt_ds01"));
+    hub.sendUpdate (F("count_ds01"));
+    hub.sendUpdate (F("temper_ds01"));
+    break;
+
+  case 2:
+    time_ds02 = time_sist;
+    hub.sendUpdate (F("time_ds02"));
+    hub.sendUpdate (F("volt_ds02"));
+    hub.sendUpdate (F("count_ds02"));
+    hub.sendUpdate (F("temper_ds02"));
+    break;
+  }
+
   
 }
 
 void build(gh::Builder& b){
+
   if(b.beginRow()){
   b.Time_(F("time"), &time_sist).label(F("время")).color(gh::Colors::Blue);
-  b.Display(F("---")).label(F("Releases")).color(gh::Colors::Blue);
-  b.Display_(F("vers"),&data.counter ).label(F("count")). color(gh::Colors::Blue);                      //сюда шлет свою версию прибор из туалета
-  b.Button_(F("supd"));                                               //по нажатию, все удаленные устройства ищут обновы.
+  b.Display_(F("count"), data.counter).label("").color(gh::Colors::Blue);
+  b.Display_(F("voltage"), data.temper).label(F("температура")). color(gh::Colors::Blue);       //сюда шлет свою версию прибор из туалета
+  //b.Button_(F("supd"));                                               //по нажатию, все удаленные устройства ищут обновы.
   b.endRow();
   }
-
+  
+  //=============================================первая строка. датчик DS 01
+  if(b.beginRow()){
+  b.Time_(F("time_ds01"), &time_ds01).label(F("обновилось")).color(gh::Colors:: Aqua).click();
+  b.Display_(F("volt_ds01"), data.voltage).label(F("напряжение")).color(gh::Colors::Blue);
+  b.Display_(F("count_ds01"), data.counter).label(F("count")).color(gh::Colors::Blue);
+  b.Display_(F("temper_ds01"), data.temper).label(F("температура")). color(gh::Colors::Blue);
+  b.endRow();
+}
+ 
+  //=============================================вторая строка. датчик DS 02
+  if(b.beginRow()){
+  b.Time_(F("time_ds02"), &time_ds02).label(F("обновилось")).color(gh::Colors:: Aqua).click();
+  b.Display_(F("volt_ds02"), data.voltage).label(F("напряжение")).color(gh::Colors::Blue);
+  b.Display_(F("count_ds02"), data.counter).label(F("count")).color(gh::Colors::Blue);
+  b.Display_(F("temper_ds02"), data.temper).label(F("температура")). color(gh::Colors::Blue);
+  b.endRow();
+}
+//====================================================================
   if(b.beginRow()){
     b.Time_(F("t_on"), &t_on).label(F("вкл")).color(gh::Colors::Red).click();
     b.Time_(F("t_off"), &t_off).label(F("выкл")).color(gh::Colors::Green);
@@ -137,26 +176,14 @@ void build(gh::Builder& b){
     b.endRow();
   }
 
-  if(b.beginRow()){
-    b.Display_(F("hvs")).label(F("ХВС")).color(gh::Colors::Aqua);
-    b.Display_(F("gvs")).label(F("ГВС")).color(gh::Colors::Orange);
-    b.Switch_(F("mg"), &sw_mg).label(F("М/Ж")).color(gh::Colors::Red);
-    b.endRow();
-  }
 
-  b.Title(F("Рита"));
-  if(b.beginRow()){
-    b.Switch_(F("Rsvet"), &Rsw_svet).label(F("парта"));    //.attach(sw_svet);
-    b.Switch_(F("Rroz"), &Rsw_roz).label(F("розетка"));    //.attach(sw_becksvet);
-    b.endRow();
-  }
 }
 
 void setup(){
   Serial.begin(74880);
   Serial.println("");
   Serial.println("Hello");
-  Serial.println("версия 0.2");
+  Serial.println("версия 0.3");
 
   pinMode(led, OUTPUT);
   digitalWrite(led, LOW);
@@ -173,7 +200,7 @@ void setup(){
   setup_wifi();
 
   hub.mqtt.config(mqtt_server, mqtt_port, mqtt_user, mqtt_password);
-  hub.setVersion("Srvrn1/Lipa@0.1");
+  hub.setVersion("Srvrn1/Road_test@0.3");
   hub.onUnix(onunix);
   hub.onBuild(build);                        // подключаем билдер
   hub.begin();   
@@ -185,6 +212,8 @@ void loop(){
   hub.tick();
 
   if (rx.gotData()) radio();
+
+  if(millis() - timer_led > 300) digitalWrite(led, HIGH);
 
   static GH::Timer tmr(1000);                    //запускаем таймер
   if(tmr){
