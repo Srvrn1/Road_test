@@ -12,7 +12,14 @@ Gyver433_RX<5, 16> rx;
 
 ///////////////=====================================
 uint32_t time_ds01;
+uint32_t counter_ds01;
+float voltage_ds01;
+float temper_ds01;
+
 uint32_t time_ds02;
+uint32_t counter_ds02;
+float voltage_ds02;
+float temper_ds02;
 //--------------------------
 uint32_t time_sist;         //время системы
 uint32_t  t_on;             //время вкл аквариум
@@ -32,7 +39,7 @@ struct DataPack {
   float temper;
 };
 DataPack data;
-//==============================
+
 //////////////======================================
 
 GyverHub hub("MyDev", "дорога", "f63b");  // имя сети, имя устройства, иконка
@@ -116,6 +123,10 @@ void radio(){
   switch (data.deviceID) {
   case 1:
     time_ds01 = time_sist;
+    counter_ds01 = data.counter;
+    voltage_ds01 = data.voltage;
+    temper_ds01 = data.temper;
+
     hub.sendUpdate (F("time_ds01"));
     hub.sendUpdate (F("volt_ds01"));
     hub.sendUpdate (F("count_ds01"));
@@ -124,6 +135,10 @@ void radio(){
 
   case 2:
     time_ds02 = time_sist;
+    counter_ds02 = data.counter;
+    voltage_ds02 = data.voltage;
+    temper_ds02 = data.temper;
+
     hub.sendUpdate (F("time_ds02"));
     hub.sendUpdate (F("volt_ds02"));
     hub.sendUpdate (F("count_ds02"));
@@ -147,18 +162,18 @@ void build(gh::Builder& b){
   //=============================================первая строка. датчик DS 01
   if(b.beginRow()){
   b.Time_(F("time_ds01"), &time_ds01).label(F("обновилось")).color(gh::Colors:: Aqua).click();
-  b.Display_(F("volt_ds01"), data.voltage).label(F("напряжение")).color(gh::Colors::Blue);
-  b.Display_(F("count_ds01"), data.counter).label(F("count")).color(gh::Colors::Blue);
-  b.Display_(F("temper_ds01"), data.temper).label(F("температура")). color(gh::Colors::Blue);
+  b.Display_(F("volt_ds01"), voltage_ds01).label(F("напряжение")).color(gh::Colors::Blue);
+  b.Display_(F("count_ds01"), counter_ds01).label(F("count")).color(gh::Colors::Blue);
+  b.Display_(F("temper_ds01"), temper_ds01).label(F("температура")). color(gh::Colors::Blue);
   b.endRow();
 }
  
   //=============================================вторая строка. датчик DS 02
   if(b.beginRow()){
   b.Time_(F("time_ds02"), &time_ds02).label(F("обновилось")).color(gh::Colors:: Aqua).click();
-  b.Display_(F("volt_ds02"), data.voltage).label(F("напряжение")).color(gh::Colors::Blue);
-  b.Display_(F("count_ds02"), data.counter).label(F("count")).color(gh::Colors::Blue);
-  b.Display_(F("temper_ds02"), data.temper).label(F("температура")). color(gh::Colors::Blue);
+  b.Display_(F("volt_ds02"), voltage_ds02).label(F("напряжение")).color(gh::Colors::Blue);
+  b.Display_(F("count_ds02"), counter_ds02).label(F("count")).color(gh::Colors::Blue);
+  b.Display_(F("temper_ds02"), temper_ds02).label(F("температура")). color(gh::Colors::Blue);
   b.endRow();
 }
 //====================================================================
@@ -183,7 +198,7 @@ void setup(){
   Serial.begin(74880);
   Serial.println("");
   Serial.println("Hello");
-  Serial.println("версия 0.3");
+  Serial.println("версия 0.4");
 
   pinMode(led, OUTPUT);
   digitalWrite(led, LOW);
@@ -200,7 +215,7 @@ void setup(){
   setup_wifi();
 
   hub.mqtt.config(mqtt_server, mqtt_port, mqtt_user, mqtt_password);
-  hub.setVersion("Srvrn1/Road_test@0.3");
+  hub.setVersion("Srvrn1/Road_test@0.4");
   hub.onUnix(onunix);
   hub.onBuild(build);                        // подключаем билдер
   hub.begin();   
