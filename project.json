@@ -1,7 +1,7 @@
 {
-  "name": "Lipa",
+  "name": "Road Test",
   "about": "Эксперементальная обкатка ",
-  "version": "0.4",
+  "version": "0.5",
   "notes": "первый раз",
   "builds": [
     {

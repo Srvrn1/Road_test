@@ -46,8 +46,8 @@ GyverHub hub("MyDev", "дорога", "f63b");  // имя сети, имя ус�
 WiFiClient espClient;
 
 ///   WI-FI  ///////////
-const char* ssid = "TTK-24";
-const char* password = "79811231";
+const char* ssid = "srvrn";
+const char* password = "2155791975";
 
 //const char* ssid = "srvrn";
 //const char* password = "2155791975";
@@ -142,7 +142,7 @@ void radio(){
     hub.sendUpdate (F("time_ds02"));
     hub.sendUpdate (F("volt_ds02"));
     hub.sendUpdate (F("count_ds02"));
-    hub.sendUpdate (F("temper_ds02"));
+    hub.sendGet (F("temper_ds02"));
     break;
   }
 
@@ -198,7 +198,7 @@ void setup(){
   Serial.begin(74880);
   Serial.println("");
   Serial.println("Hello");
-  Serial.println("версия 0.4");
+  Serial.println("версия 0.5");
 
   pinMode(led, OUTPUT);
   digitalWrite(led, LOW);
@@ -215,12 +215,14 @@ void setup(){
   setup_wifi();
 
   hub.mqtt.config(mqtt_server, mqtt_port, mqtt_user, mqtt_password);
-  hub.setVersion("Srvrn1/Road_test@0.4");
+  hub.setVersion("Srvrn1/Road_test@0.5");    //версия для обновы
   hub.onUnix(onunix);
   hub.onBuild(build);                        // подключаем билдер
   hub.begin();   
+  
+  hub.sendGetAuto(true);  // для отправки в mqtt при действиях с приложения
 
-  attachInterrupt(5, isr, CHANGE);  // взводим прерывания по CHANGE
+  attachInterrupt(5, isr, CHANGE);  // взводим прерывания по CHANGE для радио
 }
 
 void loop(){
