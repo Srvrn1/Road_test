@@ -1,8 +1,8 @@
 {
   "name": "Road Test",
   "about": "Эксперементальная обкатка ",
-  "version": "0.5",
-  "notes": "первый раз",
+  "version": "0.6",
+  "notes": "температуту показывает",
   "builds": [
     {
       "chipFamily": "ESP8266",

@@ -130,7 +130,7 @@ void radio(){
     hub.sendUpdate (F("time_ds01"));
     hub.sendUpdate (F("volt_ds01"));
     hub.sendUpdate (F("count_ds01"));
-    hub.sendUpdate (F("temper_ds01"));
+    hub.sendGet (F("temper_ds01"));
     break;
 
   case 2:
@@ -198,7 +198,7 @@ void setup(){
   Serial.begin(74880);
   Serial.println("");
   Serial.println("Hello");
-  Serial.println("версия 0.5");
+  Serial.println("версия 0.6");
 
   pinMode(led, OUTPUT);
   digitalWrite(led, LOW);
@@ -215,7 +215,7 @@ void setup(){
   setup_wifi();
 
   hub.mqtt.config(mqtt_server, mqtt_port, mqtt_user, mqtt_password);
-  hub.setVersion("Srvrn1/Road_test@0.5");    //версия для обновы
+  hub.setVersion("Srvrn1/Road_test@0.6");    //версия для обновы
   hub.onUnix(onunix);
   hub.onBuild(build);                        // подключаем билдер
   hub.begin();   
